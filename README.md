@@ -32,3 +32,21 @@ minikube profile list
 sudo env MINIKUBE_HOME=/home/chandra minikube -p minikube tunnel
 sudo env MINIKUBE_HOME=/home/chandra KUBECONFIG=/home/chandra/.kube/config minikube -p minikube tunnel
 
+
+# contoh folder
+mkdir -p ~/actions-runner && cd ~/actions-runner
+
+# download terbaru (lihat URL rilis GitHub Actions Runner)
+curl -o actions-runner-linux-x64.tar.gz -L https://github.com/actions/runner/releases/download/v2.319.1/actions-runner-linux-x64-2.319.1.tar.gz
+tar xzf actions-runner-linux-x64.tar.gz
+
+# di GitHub: Repo → Settings → Actions → Runners → New runner → copy TOKEN
+./config.sh --url https://github.com/<user_atau_org>/<repo> \
+            --token <TOKEN> \
+            --labels "linux,x64,minikube" \
+            --name "runner-wsl-minikube"
+
+# jalankan sebagai service agar selalu online
+sudo ./svc.sh install
+sudo ./svc.sh start
+./svc.sh status
