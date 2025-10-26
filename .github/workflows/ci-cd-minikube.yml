@@ -1,31 +1,30 @@
-name: CI/CD Local (Minikube)
+name: CI/CD Minikube (immutable tag)
 
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: {}
 
 jobs:
   build-and-deploy:
-    runs-on: self-hosted   # pastikan runnermu berlabel ini
+    runs-on: self-hosted
+    env:
+      KUBECONFIG: /home/chandra/.kube/config
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build local image
-        run: docker build -t hello-app:local .
+      - name: Set image tag
+        id: meta
+        run: echo "TAG=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
 
-      # Salin image ke daemon minikube (tanpa registry)
-      - name: Load image into minikube
-        run: minikube image load hello-app:local
+      - name: Build image
+        run: docker build -t hello-app:${{ steps.meta.outputs.TAG }} .
 
-      - name: Apply manifests
+      - name: Load image into Minikube
+        run: minikube image load hello-app:${{ steps.meta.outputs.TAG }}
+
+      - name: Update Deployment image (kubectl set image)
         run: |
-          kubectl apply -f k8s/deploy.yaml
-          kubectl rollout status deploy/hello-app --timeout=120s
-
-      # (opsional) apply ingress bila dipakai
-      - name: Apply ingress (optional)
-        if: ${{ false }}   # ubah ke true bila ingin aktif
-        run: |
-          kubectl apply -f k8s/ingress.yaml
+          kubectl set image deploy/hello-app \
+            hello=hello-app:${{ steps.meta.outputs.TAG }}
+          kubectl rollout status deploy/hello-app --timeout=180s
