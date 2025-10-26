@@ -1,21 +1,28 @@
-name: CI/CD Minikube (immutable tag)
-
+name: CI/CD Minikube
 on:
   push:
-    branches: [ main ]
+    branches: [main]
+  workflow_dispatch: {}
 
 jobs:
   build-and-deploy:
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux, x64, minikube]
     env:
       KUBECONFIG: /home/chandra/.kube/config
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Sanity
+        run: |
+          whoami
+          kubectl config current-context
+          kubectl get nodes
+          docker version --format '{{.Server.Version}}' || true
+
       - name: Set image tag
         id: meta
-        run: echo "TAG=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+        run: echo "TAG=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
       - name: Build image
         run: docker build -t hello-app:${{ steps.meta.outputs.TAG }} .
@@ -23,8 +30,7 @@ jobs:
       - name: Load image into Minikube
         run: minikube image load hello-app:${{ steps.meta.outputs.TAG }}
 
-      - name: Update Deployment image (kubectl set image)
+      - name: Update Deployment image
         run: |
-          kubectl set image deploy/hello-app \
-            hello=hello-app:${{ steps.meta.outputs.TAG }}
+          kubectl set image deploy/hello-app hello=hello-app:${{ steps.meta.outputs.TAG }}
           kubectl rollout status deploy/hello-app --timeout=180s
