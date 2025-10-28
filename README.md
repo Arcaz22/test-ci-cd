@@ -17,6 +17,7 @@ kubectl get svc
 
 # Cek paling cepat
 minikube service hello-app-svc --url
+kubectl port-forward svc/hello-app-svc 8080:80
 
 # jika pakai ingres
 minikube addons enable ingress
