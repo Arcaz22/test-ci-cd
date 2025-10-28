@@ -13,6 +13,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check code format (Black)
+        run: |
+          pip install black
+          black . --check
+
+      - name: Security Scan (Trivy)
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
+          ./trivy fs . --exit-code 1 --severity HIGH,CRITICAL --no-progress
+
       - name: Sanity
         run: |
           whoami
